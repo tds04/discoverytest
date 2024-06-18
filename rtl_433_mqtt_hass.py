@@ -29,6 +29,7 @@ import json
 import paho.mqtt.client as mqtt
 import re
 
+
 discovery_timeouts = {}
 
 # Fields that get ignored when publishing to Home Assistant
@@ -599,6 +600,8 @@ mappings = {
         "config": {
             "name": "SCM Consumption Value",
             "value_template": "{{ value|int }}",
+            "device_class": "",
+            "unit_of_measurement": "",         
             "state_class": "total_increasing",
         }
     },
@@ -609,12 +612,14 @@ mappings = {
         "config": {
             "name": "Neptune Consumption Value",
             "value_template": "{{ value|int }}",
+            "device_class": "water",
+            "unit_of_measurement": "gal",
             "state_class": "total_increasing",
         }
     },
 
 
-    "consumption": {
+    "Consumption": {
         "device_type": "sensor",
         "object_suffix": "consumption",
         "config": {
@@ -879,21 +884,16 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
         logging.debug("Device (%s) is not in the desired list of device ids: [%s]" % (data["id"], ids))
         return
 
-# detect known attributes
-for key in data.keys():
-    lower_key = key.casefold()
-    lower_mappings = {k.casefold(): v for k, v in mappings.items()}
-
-    if lower_key in lower_mappings:
-        # topic = "/".join([topicprefix,"devices",model,instance,key])
-        topic = "/".join([base_topic, key])
-        if publish_config(mqttc, topic, model, device_id, lower_mappings[lower_key], key):
-            published_keys.append(key)
-    else:
-        if key not in SKIP_KEYS:
-            skipped_keys.append(key)
-
-
+    # detect known attributes
+    for key in data.keys():
+        if key in mappings:
+            # topic = "/".join([topicprefix,"devices",model,instance,key])
+            topic = "/".join([base_topic, key])
+            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
+                published_keys.append(key)
+        else:
+            if key not in SKIP_KEYS:
+                skipped_keys.append(key)
 
     if "secret_knock" in data.keys():
         for m in secret_knock_mappings:
