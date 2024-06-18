@@ -880,16 +880,19 @@ def bridge_event_to_hass(mqttc, topic_prefix, data):
         return
 
 # detect known attributes
-for key in data.keys(): 
-    if key in mappings:
-        if input.casefold() == value.casefold():           
-            # topic = "/".join([topicprefix,"devices",model,instance,key])
-            topic = "/".join([base_topic, key])
-            if publish_config(mqttc, topic, model, device_id, mappings[key], key):
-                published_keys.append(key)
-        else:
-            if key not in SKIP_KEYS:
-                skipped_keys.append(key)
+for key in data.keys():
+    lower_key = key.casefold()
+    lower_mappings = {k.casefold(): v for k, v in mappings.items()}
+
+    if lower_key in lower_mappings:
+        # topic = "/".join([topicprefix,"devices",model,instance,key])
+        topic = "/".join([base_topic, key])
+        if publish_config(mqttc, topic, model, device_id, lower_mappings[lower_key], key):
+            published_keys.append(key)
+    else:
+        if key not in SKIP_KEYS:
+            skipped_keys.append(key)
+
 
 
     if "secret_knock" in data.keys():
